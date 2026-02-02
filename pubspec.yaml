@@ -1,0 +1,13 @@
+name: korean_lunar_utils
+version: 0.1.0
+description: Lunar/Solar conversion utility with a structured converter API.
+repository: https://example.com/korean_lunar_utils
+
+environment:
+  sdk: ">=2.18.0 <4.0.0"
+
+dependencies:
+
+
+dev_dependencies:
+  test: ^1.24.0
