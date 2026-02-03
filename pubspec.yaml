@@ -1,7 +1,9 @@
 name: korean_lunar_utils
-version: 1.0.0
+version: 1.0.1
 description: Lunar/Solar conversion utility with a structured converter API.
 repository: https://github.com/OsoriAndOmori/korean_lunar_utils
+homepage: https://github.com/OsoriAndOmori/korean_lunar_utils
+issue_tracker: https://github.com/OsoriAndOmori/korean_lunar_utils/issues
 
 environment:
   sdk: ">=2.18.0 <4.0.0"
