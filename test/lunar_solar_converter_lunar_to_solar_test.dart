@@ -11,6 +11,14 @@ void main() {
       expect(solar, DateTime(2019, 8, 14));
     });
 
+    test('장인어른 2026년', () {
+      final lunar = DateTime(2026, 7, 14);
+
+      final solar = LunarSolarConverter.convertLunarToSolar(lunar);
+
+      expect(solar, DateTime(2026, 8, 26));
+    });
+
     test('장인어른 2020년', () {
       final lunar = DateTime(2020, 7, 14);
 
@@ -81,6 +89,14 @@ void main() {
       final solar = LunarSolarConverter.convertLunarToSolar(lunar);
 
       expect(solar, DateTime(2018, 12, 17));
+    });
+
+    test('임의의 날짜2', () {
+      final lunar = DateTime(2024, 7, 14);
+
+      final solar = LunarSolarConverter.convertLunarToSolar(lunar);
+
+      expect(solar, DateTime(2024, 8, 17));
     });
   });
 }

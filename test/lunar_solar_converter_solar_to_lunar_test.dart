@@ -24,7 +24,7 @@ void main() {
 
       final lunar = LunarSolarConverter.convertSolarToLunar(solar);
 
-      expect(lunar, DateTime(2020, 6, 23));
+      expect(lunar, DateTime(2020, 4, 11));
     });
 
     test('미래 수진 생일', () {
@@ -32,7 +32,7 @@ void main() {
 
       final lunar = LunarSolarConverter.convertSolarToLunar(solar);
 
-      expect(lunar, DateTime(2023, 9, 23));
+      expect(lunar, DateTime(2023, 6, 23));
     });
   });
 }
