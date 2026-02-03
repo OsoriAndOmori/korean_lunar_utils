@@ -1,0 +1,47 @@
+name: Publish to pub.dev
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pubdev-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run tests
+        run: dart test
+
+      # (선택) 토큰이 실제로 들어왔는지 확인(값은 출력 안 함)
+      - name: Verify PUB_DEV_TOKEN is set
+        env:
+          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
+        run: |
+          if [ -z "${PUB_DEV_TOKEN}" ]; then
+            echo "PUB_DEV_TOKEN is missing"; exit 1
+          fi
+          echo "PUB_DEV_TOKEN is set"
+
+      - name: Publish
+        env:
+          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
+        run: dart pub publish --force
