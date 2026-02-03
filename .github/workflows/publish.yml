@@ -2,11 +2,12 @@ name: Publish to pub.dev
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "*.*.*"   # 1.2.3 형태만
 
 permissions:
   contents: read
+  id-token: write  # OIDC 필수
 
 concurrency:
   group: pubdev-publish
@@ -15,6 +16,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pub-dev  # pub.dev에서 설정한 environment와 동일
 
     steps:
       - name: Checkout
@@ -31,17 +33,5 @@ jobs:
       - name: Run tests
         run: dart test
 
-      # (선택) 토큰이 실제로 들어왔는지 확인(값은 출력 안 함)
-      - name: Verify PUB_DEV_TOKEN is set
-        env:
-          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
-        run: |
-          if [ -z "${PUB_DEV_TOKEN}" ]; then
-            echo "PUB_DEV_TOKEN is missing"; exit 1
-          fi
-          echo "PUB_DEV_TOKEN is set"
-
       - name: Publish
-        env:
-          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
         run: dart pub publish --force
