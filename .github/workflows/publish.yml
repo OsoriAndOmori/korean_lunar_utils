@@ -1,4 +1,4 @@
-name: Publish to pub.dev
+name: Auto minor release & publish
 
 on:
   push:
@@ -6,14 +6,21 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write  # 커밋/태그 푸시하려면 필요
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout (full history for tags)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Dart
         uses: dart-lang/setup-dart@v1
@@ -24,10 +31,81 @@ jobs:
       - name: Run tests
         run: dart test
 
-      - name: Authenticate with pub.dev
+      # 무한루프 방지: 릴리즈 커밋이면 작업 종료
+      - name: Stop if this is a release commit
+        run: |
+          MSG="$(git log -1 --pretty=%s)"
+          echo "Last commit message: $MSG"
+          if echo "$MSG" | grep -qE '^chore\(release\):'; then
+            echo "Release commit detected. Skipping."
+            exit 0
+          fi
+
+      - name: Bump minor version in pubspec.yaml
+        id: bump
+        run: |
+          python3 - << 'PY'
+          import re, pathlib
+
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text(encoding="utf-8")
+
+          m = re.search(r'(?m)^version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)(?:[^\n]*)?$', text)
+          if not m:
+            raise SystemExit("❌ pubspec.yaml에서 version: x.y.z 를 찾지 못했습니다.")
+
+          major, minor, patch = map(int, m.groups())
+          minor += 1
+          patch = 0
+          new_version = f"{major}.{minor}.{patch}"
+
+          # version 라인만 치환
+          new_text = re.sub(
+              r'(?m)^version:\s*[0-9]+\.[0-9]+\.[0-9]+(?:[^\n]*)?$',
+              f"version: {new_version}",
+              text,
+              count=1
+          )
+
+          path.write_text(new_text, encoding="utf-8")
+
+          print(new_version)
+          PY
+
+          NEW_VERSION="$(python3 - <<'PY'
+          import re, pathlib
+          t = pathlib.Path("pubspec.yaml").read_text(encoding="utf-8")
+          m = re.search(r'(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)', t)
+          print(m.group(1))
+          PY
+          )"
+
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "New version: $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add pubspec.yaml
+          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
+
+      - name: Create and push tag
+        run: |
+          TAG="v${{ steps.bump.outputs.new_version }}"
+          git tag "$TAG"
+          git push origin main
+          git push origin "$TAG"
+
+      # pub.dev 인증은 env var 방식으로
+      - name: Publish to pub.dev
         env:
           PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
-        run: dart pub token add https://pub.dev --env-var PUB_DEV_TOKEN
+        run: |
+          # (선택) 토큰이 없으면 바로 실패
+          if [ -z "${PUB_DEV_TOKEN}" ]; then
+            echo "PUB_DEV_TOKEN missing"; exit 1
+          fi
 
-      - name: Publish
-        run: dart pub publish --force
+          dart pub publish --force
