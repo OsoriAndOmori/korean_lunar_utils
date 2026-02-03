@@ -1,36 +1,33 @@
-name: Publish Dart package
+name: Publish to pub.dev
 
 on:
-  pull_request:
   push:
-    branches: [main]
-  release:
-    types: [published]
-  workflow_dispatch:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
-  verify:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+
       - name: Install dependencies
         run: dart pub get
+
       - name: Run tests
         run: dart test
 
-  publish:
-    if: github.event_name == 'release'
-    needs: verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-      - name: Install dependencies
-        run: dart pub get
-      - name: Configure pub credentials
-        run: dart pub token add https://pub.dev --env-var PUB_TOKEN
+      - name: Authenticate with pub.dev
         env:
-          PUB_TOKEN: ${{ secrets.PUB_TOKEN }}
-      - name: Publish package
+          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
+        run: dart pub token add https://pub.dev --env-var PUB_DEV_TOKEN
+
+      - name: Publish
         run: dart pub publish --force
